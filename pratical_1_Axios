@@ -1,0 +1,77 @@
+// Full Stack Example: Express Backend + React Frontend Component using Axios
+
+// --- Backend: server.js ---
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+app.use(cors());
+
+const products = [
+    { name: 'Laptop', price: 1200 },
+    { name: 'Smartphone', price: 800 },
+    { name: 'Headphones', price: 150 },
+];
+
+app.get('/api/products', (req, res) => {
+    res.json(products);
+});
+
+const PORT = 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// --- Frontend: Products.js ---
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+function Products() {
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        axios.get('http://localhost:5000/api/products')
+            .then(res => {
+                setProducts(res.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                setError('Failed to fetch products');
+                setLoading(false);
+            });
+    }, []);
+
+    if (loading) return <p>Loading products...</p>;
+    if (error) return <p>{error}</p>;
+
+    return (
+        <div>
+            <h2>Product List</h2>
+            <ul>
+                {products.map((p, index) => (
+                    <li key={index}>
+                        {p.name} - ${p.price}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+export default Products;
+
+// --- Include in App.js ---
+import React from 'react';
+import Products from './Products';
+
+function App() {
+    return (
+        <div className="App">
+            <Products />
+        </div>
+    );
+}
+
+export default App;
