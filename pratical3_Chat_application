@@ -1,0 +1,93 @@
+// --- Backend: server.js ---
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: '*' }
+});
+
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('chatMessage', (msg) => {
+        io.emit('chatMessage', msg);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+const PORT = 5000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+// --- Frontend: Chat.js ---
+import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
+
+function Chat() {
+    const [name, setName] = useState('');
+    const [message, setMessage] = useState('');
+    const [messages, setMessages] = useState([]);
+
+    useEffect(() => {
+        socket.on('chatMessage', (msg) => {
+            setMessages(prev => [...prev, msg]);
+        });
+
+        return () => socket.off('chatMessage');
+    }, []);
+
+    const sendMessage = () => {
+        if (name && message) {
+            socket.emit('chatMessage', { name, message });
+            setMessage('');
+        }
+    };
+
+    return (
+        <div>
+            <h2>Real-Time Chat</h2>
+            <input
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+            />
+            <input
+                type="text"
+                placeholder="Type message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            />
+            <button onClick={sendMessage}>Send</button>
+            <ul>
+                {messages.map((m, index) => (
+                    <li key={index}><strong>{m.name}:</strong> {m.message}</li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+export default Chat;
+
+// --- Include in App.js ---
+import React from 'react';
+import Chat from './Chat';
+
+function App() {
+    return (
+        <div className="App">
+            <Chat />
+        </div>
+    );
+}
+
+export default App;
